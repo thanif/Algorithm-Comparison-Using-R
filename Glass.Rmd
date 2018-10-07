@@ -1,0 +1,244 @@
+---
+title: "Comparison of Classification and Clustering Algorithms on Glass Dataset Using R"
+author: "Talha Hanif Butt"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+library(caret)
+library(mclust)
+library(fpc)
+library(cluster)
+library(clusteval)
+library(factoextra)
+library(ggplot2)
+library(kmed)
+library(mlbench)
+```
+
+## Loading Glass Dataset
+```{r}
+# attach the Glass Identification dataset to the environment
+data("Glass")
+# rename the dataset
+dataset <- Glass
+```
+
+## Partitioning Data for Validation
+```{r}
+# create a list of 80% of the rows inthe original dataset we can use for training
+validation_index <- createDataPartition(dataset$Type, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- dataset[-validation_index,]
+# use the remaining 80% of data to training and testing the models
+dataset <- dataset[validation_index,]
+```
+
+## Getting Insights from Data
+```{r}
+# dimensions of dataset
+dim(dataset)
+```
+
+```{r}
+# list types for each attribute
+sapply(dataset, class)
+```
+
+```{r}
+# take a peek at the first 6 rows of the data
+head(dataset)
+```
+
+```{r}
+# list the levels for the class
+levels(dataset$Type)
+```
+
+```{r}
+# summarize the class distribution
+percentage <- prop.table(table(dataset$Type)) * 100
+cbind(freq=table(dataset$Type), percentage=percentage)
+```
+
+```{r}
+# summarize attribute distributions
+summary(dataset)
+```
+
+```{r}
+# split input and output
+x <- dataset[,1:9]
+y <- dataset[,10]
+```
+
+```{r}
+# boxplot for each attribute on one image
+par(mfrow=c(1,5))
+  for(i in 1:5) {
+  boxplot(x[,i], main=names(Glass)[i])
+}
+```
+
+```{r}
+# boxplot for each attribute on one image
+par(mfrow=c(1,4))
+  for(i in 6:9) {
+  boxplot(x[,i], main=names(Glass)[i])
+}
+```
+
+```{r}
+# barplot for class breakdown
+plot(y)
+```
+
+```{r}
+# scatterplot matrix
+featurePlot(x=x, y=y, plot="ellipse")
+```
+
+```{r}
+# box and whisker plots for each attribute
+featurePlot(x=x, y=y, plot="box")
+```
+
+```{r}
+ggplot(Glass, aes(RI,Na, color = Type)) + geom_point()
+```
+
+```{r}
+ggplot(Glass, aes(Mg,Al, color = Type)) + geom_point()
+```
+
+```{r}
+ggplot(Glass, aes(Si,K, color = Type)) + geom_point()
+```
+
+```{r}
+# density plots for each attribute by class value
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+featurePlot(x=x, y=y, plot="density", scales=scales)
+```
+
+## Applying Classification Algorithms
+```{r}
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+```
+
+```{r}
+# kNN
+set.seed(7)
+fit.knn <- train(Type~., data=dataset, method="knn", metric=metric, trControl=control)
+# SVM
+set.seed(7)
+fit.svm <- train(Type~., data=dataset, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+fit.rf <- train(Type~., data=dataset, method="rf", metric=metric, trControl=control)
+```
+
+## Comparison of the Classification Algorithms
+```{r}
+# summarize accuracy of models
+results <- resamples(list(knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+```
+
+```{r}
+# compare accuracy of models
+dotplot(results)
+```
+
+## Insights from the best model
+```{r}
+# summarize Best Model
+print(fit.rf)
+```
+
+```{r}
+# estimate skill of Random Forest on the validation dataset
+predictions <- predict(fit.rf, validation)
+confusionMatrix(predictions, validation$Type)
+```
+
+## Applying Clustering Algorithms 
+```{r}
+# K-means
+set.seed(20)
+fit.kmeans <- kmeans(Glass[, 1:9], 7, nstart = 20)
+# Hierarchical Agglomerative
+set.seed(20)
+d <- dist(Glass[,1:9], method = "euclidean") # distance matrix
+fit.ha <- hclust(d, method="ward.D")
+# K-Medoids Clustering
+num <- as.matrix(Glass[,1:9])
+mrwdist <- distNumeric(num, num, method = "mrw")
+fit.kmedoids <- fastkmed(mrwdist, ncluster = 7, iterate = 50)
+```
+
+## Getting insights from Hierarchical Agglomerative Clustering
+```{r}
+# Cut tree into 4 groups
+sub_grp <- cutree(fit.ha, k = 7)
+
+# Number of members in each cluster
+table(sub_grp)
+## sub_grp
+```
+
+```{r}
+plot(fit.ha, cex = 0.6)
+rect.hclust(fit.ha, k = 7, border = 2:5)
+```
+
+```{r}
+fviz_cluster(list(data = Glass[,1:9], cluster = sub_grp))
+```
+
+## Getting insights from K-Means Clustering
+```{r}
+table(fit.kmeans$cluster, Glass$Type)
+```
+
+```{r}
+fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
+ggplot(Glass, aes(RI, Na, color = fit.kmeans$cluster)) + geom_point()
+```
+
+```{r}
+fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
+ggplot(Glass, aes(Mg, Al, color = fit.kmeans$cluster)) + geom_point()
+```
+
+```{r}
+fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
+ggplot(Glass, aes(Si, K, color = fit.kmeans$cluster)) + geom_point()
+```
+
+## Getting insights from K-Medoids Clustering
+```{r}
+(fastiris <- table(fit.kmedoids$cluster, Glass[,10]))
+```
+
+```{r}
+fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
+ggplot(Glass, aes(RI, Na, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+```{r}
+fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
+ggplot(Glass, aes(Mg, Al, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+```{r}
+fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
+ggplot(Glass, aes(Si, K, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+## Conclusion
+With better accuracy and kappa measures, Random Forest has outperformed other competitors on Glass Dataset while Hierarchical Agglomerative Clustering is the winner when compared with K-Means and K-Medoids Clustering on Glass Dataset as it has clustered data better evident from the Cluster Plot and Cluster Dendrogram.
