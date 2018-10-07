@@ -18,7 +18,7 @@ library(kmed)
 library(mlbench)
 ```
 
-## Loading Glass Dataset
+## Loading Pima Indians Diabetes Dataset
 ```{r}
 # attach the Pima Indians Diabetes Database to the environment
 data("PimaIndiansDiabetes")
