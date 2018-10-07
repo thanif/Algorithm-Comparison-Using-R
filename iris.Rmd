@@ -1,0 +1,221 @@
+---
+title: "Comparison of Classification and Clustering Algorithms on Iris Dataset Using R"
+author: "Talha Hanif Butt"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+library(caret)
+library(mclust)
+library(fpc)
+library(cluster)
+library(clusteval)
+library(factoextra)
+library(ggplot2)
+library(kmed)
+```
+
+## Loading Iris Dataset
+```{r}
+# attach the iris dataset to the environment
+data(iris)
+# rename the dataset
+dataset <- iris
+```
+
+## Partitioning Data for Validation
+```{r}
+# create a list of 80% of the rows inthe original dataset we can use for training
+validation_index <- createDataPartition(dataset$Species, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- dataset[-validation_index,]
+# use the remaining 80% of data to training and testing the models
+dataset <- dataset[validation_index,]
+```
+
+## Getting Insights from Data
+```{r}
+# dimensions of dataset
+dim(dataset)
+```
+
+```{r}
+# list types for each attribute
+sapply(dataset, class)
+```
+
+```{r}
+# take a peek at the first 5 rows of the data
+head(dataset)
+```
+
+```{r}
+# list the levels for the class
+levels(dataset$Species)
+```
+
+```{r}
+# summarize the class distribution
+percentage <- prop.table(table(dataset$Species)) * 100
+cbind(freq=table(dataset$Species), percentage=percentage)
+```
+
+```{r}
+# summarize attribute distributions
+summary(dataset)
+```
+
+```{r}
+# split input and output
+x <- dataset[,1:4]
+y <- dataset[,5]
+```
+
+```{r}
+# boxplot for each attribute on one image
+par(mfrow=c(1,4))
+  for(i in 1:4) {
+  boxplot(x[,i], main=names(iris)[i])
+}
+```
+
+```{r}
+# barplot for class breakdown
+plot(y)
+```
+
+```{r}
+# scatterplot matrix
+featurePlot(x=x, y=y, plot="ellipse")
+```
+
+```{r}
+# box and whisker plots for each attribute
+featurePlot(x=x, y=y, plot="box")
+```
+
+```{r}
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Species)) + geom_point()
+```
+
+```{r}
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Species)) + geom_point()
+```
+
+```{r}
+# density plots for each attribute by class value
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+featurePlot(x=x, y=y, plot="density", scales=scales)
+```
+
+## Applying Classification Algorithms on Iris Data
+```{r}
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+```
+
+```{r}
+# kNN
+set.seed(7)
+fit.knn <- train(Species~., data=dataset, method="knn", metric=metric, trControl=control)
+# SVM
+set.seed(7)
+fit.svm <- train(Species~., data=dataset, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+fit.rf <- train(Species~., data=dataset, method="rf", metric=metric, trControl=control)
+```
+
+## Comparison of the Classification Algorithms
+```{r}
+# summarize accuracy of models
+results <- resamples(list(knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+```
+
+```{r}
+# compare accuracy of models
+dotplot(results)
+```
+
+## Insights from the best model
+```{r}
+# summarize Best Model
+print(fit.knn)
+```
+
+```{r}
+# estimate skill of KNN on the validation dataset
+predictions <- predict(fit.knn, validation)
+confusionMatrix(predictions, validation$Species)
+```
+
+## Applying Clustering Algorithms 
+```{r}
+# K-means
+set.seed(20)
+fit.kmeans <- kmeans(iris[, 0:4], 3, nstart = 20)
+# Hierarchical Agglomerative
+set.seed(20)
+d <- dist(iris[,0:4], method = "euclidean") # distance matrix
+fit.ha <- hclust(d, method="ward.D")
+# K-Medoids Clustering
+num <- as.matrix(iris[,0:4])
+mrwdist <- distNumeric(num, num, method = "mrw")
+fit.kmedoids <- fastkmed(mrwdist, ncluster = 3, iterate = 50)
+```
+
+## Getting insights from Hierarchical Agglomerative Clustering
+```{r}
+# Cut tree into 4 groups
+sub_grp <- cutree(fit.ha, k = 3)
+
+# Number of members in each cluster
+table(sub_grp)
+## sub_grp
+```
+
+```{r}
+plot(fit.ha, cex = 0.6)
+rect.hclust(fit.ha, k = 3, border = 2:5)
+```
+
+```{r}
+fviz_cluster(list(data = iris[,0:4], cluster = sub_grp))
+```
+
+## Getting insights from K-Means Clustering
+```{r}
+table(fit.kmeans$cluster, iris$Species)
+```
+
+```{r}
+fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
+ggplot(iris, aes(Petal.Length, Petal.Width, color = fit.kmeans$cluster)) + geom_point()
+```
+
+```{r}
+fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = fit.kmeans$cluster)) + geom_point()
+```
+
+## Getting insights from K-Medoids Clustering
+```{r}
+(fastiris <- table(fit.kmedoids$cluster, iris[,5]))
+```
+
+```{r}
+fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
+ggplot(iris, aes(Petal.Length, Petal.Width, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+```{r}
+fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+## Conclusion
+With better accuracy and kappa measures, KNN has outperformed other competitors on Iris Dataset while Hierarchical Agglomerative Clustering is the winner when compared with K-Means and K-Medoids Clustering on Iris Dataset as it has clustered data better evident from the Cluster Plot and Cluster Dendrogram.
