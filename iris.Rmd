@@ -202,9 +202,13 @@ fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
 ggplot(iris, aes(Sepal.Length, Sepal.Width, color = fit.kmeans$cluster)) + geom_point()
 ```
 
+```{r}
+clusplot(iris, fit.kmeans$cluster, color=TRUE, shade=FALSE, labels=3, lines=0)
+```
+
 ## Getting insights from K-Medoids Clustering
 ```{r}
-(fastiris <- table(fit.kmedoids$cluster, iris[,5]))
+table(fit.kmedoids$cluster, iris[,5])
 ```
 
 ```{r}
@@ -215,6 +219,10 @@ ggplot(iris, aes(Petal.Length, Petal.Width, color = fit.kmedoids$cluster)) + geo
 ```{r}
 fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
 ggplot(iris, aes(Sepal.Length, Sepal.Width, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+```{r}
+clusplot(iris, fit.kmedoids$cluster, color=TRUE, shade=FALSE, labels=3, lines=0)
 ```
 
 ## Conclusion

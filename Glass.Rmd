@@ -220,9 +220,13 @@ fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
 ggplot(Glass, aes(Si, K, color = fit.kmeans$cluster)) + geom_point()
 ```
 
+```{r}
+clusplot(Glass, fit.kmeans$cluster, color=TRUE, shade=FALSE, labels=7, lines=0)
+```
+
 ## Getting insights from K-Medoids Clustering
 ```{r}
-(fastiris <- table(fit.kmedoids$cluster, Glass[,10]))
+table(fit.kmedoids$cluster, Glass[,10])
 ```
 
 ```{r}
@@ -238,6 +242,10 @@ ggplot(Glass, aes(Mg, Al, color = fit.kmedoids$cluster)) + geom_point()
 ```{r}
 fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
 ggplot(Glass, aes(Si, K, color = fit.kmedoids$cluster)) + geom_point()
+```
+
+```{r}
+clusplot(Glass, fit.kmedoids$cluster, color=TRUE, shade=FALSE, labels=7, lines=0)
 ```
 
 ## Conclusion

@@ -157,12 +157,12 @@ dotplot(results)
 ## Insights from the best model
 ```{r}
 # summarize Best Model
-print(fit.rf)
+print(fit.svm)
 ```
 
 ```{r}
-# estimate skill of Random Forest on the validation dataset
-predictions <- predict(fit.rf, validation)
+# estimate skill of SVM on the validation dataset
+predictions <- predict(fit.svm, validation)
 confusionMatrix(predictions, validation$diabetes)
 ```
 
@@ -220,9 +220,13 @@ fit.kmeans$cluster <- as.factor(fit.kmeans$cluster)
 ggplot(PimaIndiansDiabetes, aes(insulin, glucose, color = fit.kmeans$cluster)) + geom_point()
 ```
 
+```{r}
+clusplot(PimaIndiansDiabetes, fit.kmeans$cluster, color=TRUE, shade=FALSE, labels=2, lines=0)
+```
+
 ## Getting insights from K-Medoids Clustering
 ```{r}
-(fastiris <- table(fit.kmedoids$cluster, PimaIndiansDiabetes[,9]))
+table(fit.kmedoids$cluster, PimaIndiansDiabetes[,9])
 ```
 
 ```{r}
@@ -240,5 +244,9 @@ fit.kmedoids$cluster <- as.factor(fit.kmedoids$cluster)
 ggplot(PimaIndiansDiabetes, aes(insulin, glucose, color = fit.kmedoids$cluster)) + geom_point()
 ```
 
+```{r}
+clusplot(PimaIndiansDiabetes, fit.kmedoids$cluster, color=TRUE, shade=FALSE, labels=2, lines=0)
+```
+
 ## Conclusion
-With better accuracy and kappa measures, Random Forest has outperformed other competitors on Glass Dataset while Hierarchical Agglomerative Clustering is the winner when compared with K-Means and K-Medoids Clustering on Glass Dataset as it has clustered data better evident from the Cluster Plot and Cluster Dendrogram.
+With better accuracy and kappa measures, SVM has outperformed other competitors on Glass Dataset while Hierarchical Agglomerative Clustering is the winner when compared with K-Means and K-Medoids Clustering on Glass Dataset as it has clustered data better evident from the Cluster Plot and Cluster Dendrogram.
