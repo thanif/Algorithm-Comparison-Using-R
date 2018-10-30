@@ -1,4 +1,4 @@
-# Algorithm-Comparison-Using-R
+# Algorithm-Comparison-using-R
 
 # Clustering Agorithms Compared
 K-Means, K-Medoids, Hierarchical Agglomerative
